@@ -17,6 +17,7 @@ package software.amazon.awssdk.auth.credentials.internal;
 
 import static software.amazon.awssdk.utils.StringUtils.trim;
 
+import java.nio.file.Paths;
 import java.util.Optional;
 import software.amazon.awssdk.annotations.SdkInternalApi;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -24,7 +25,9 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.SystemPropertyCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenCredentialsProviderFactory;
 import software.amazon.awssdk.core.SdkSystemSetting;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.utils.StringUtils;
@@ -43,11 +46,27 @@ import software.amazon.awssdk.utils.SystemSetting;
  */
 @SdkInternalApi
 public abstract class SystemSettingsCredentialsProvider implements AwsCredentialsProvider {
+
+    private AwsCredentialsProvider credentialsProvider;
+
     @Override
     public AwsCredentials resolveCredentials() {
+
+        if (credentialsProvider == null) {
+            resolveProvider();
+        }
+
+        return credentialsProvider.resolveCredentials();
+    }
+
+    private void resolveProvider() {
         String accessKey = trim(loadSetting(SdkSystemSetting.AWS_ACCESS_KEY_ID).orElse(null));
         String secretKey = trim(loadSetting(SdkSystemSetting.AWS_SECRET_ACCESS_KEY).orElse(null));
         String sessionToken = trim(loadSetting(SdkSystemSetting.AWS_SESSION_TOKEN).orElse(null));
+
+        String roleArn = trim(loadSetting(SdkSystemSetting.AWS_ROLE_ARN).orElse(null));
+        String roleSessionName = trim(loadSetting(SdkSystemSetting.AWS_ROLE_SESSION_NAME).orElse(null));
+        String webIdentityTokenFile = trim(loadSetting(SdkSystemSetting.AWS_WEB_IDENTITY_TOKEN_FILE).orElse(null));
 
         if (StringUtils.isEmpty(accessKey)) {
             throw SdkClientException.builder()
@@ -67,8 +86,16 @@ public abstract class SystemSettingsCredentialsProvider implements AwsCredential
                                     .build();
         }
 
-        return sessionToken == null ? AwsBasicCredentials.create(accessKey, secretKey)
-                                    : AwsSessionCredentials.create(accessKey, secretKey, sessionToken);
+        if (webIdentityTokenFile != null && roleArn != null) {
+            String webIdentityToken = WebIdentityCredentialsUtil.resolveWebIdentityToken(Paths.get(webIdentityTokenFile));
+            WebIdentityTokenCredentialsProviderFactory factory = WebIdentityCredentialsUtil.factory();
+            credentialsProvider = factory.create(roleArn, roleSessionName, webIdentityToken);
+        } else if (sessionToken != null) {
+            AwsSessionCredentials sessionCredentials = AwsSessionCredentials.create(accessKey, secretKey, sessionToken);
+            credentialsProvider = StaticCredentialsProvider.create(sessionCredentials);
+        } else {
+            credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
+        }
     }
 
     /**

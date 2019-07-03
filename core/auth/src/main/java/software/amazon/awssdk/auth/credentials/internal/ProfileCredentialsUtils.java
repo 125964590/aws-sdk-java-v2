@@ -83,7 +83,8 @@ public final class ProfileCredentialsUtils {
      * providers will be created.
      */
     public Optional<AwsCredentialsProvider> credentialsProvider() {
-        return credentialsProvider(new HashSet<>());
+        Optional<AwsCredentialsProvider> credsProvider = credentialsProvider(new HashSet<>());
+        return credsProvider;
     }
 
     /**
@@ -95,9 +96,15 @@ public final class ProfileCredentialsUtils {
         if (properties.containsKey(ProfileProperty.ROLE_ARN)) {
             boolean hasSourceProfile = properties.containsKey(ProfileProperty.SOURCE_PROFILE);
             boolean hasCredentialSource = properties.containsKey(ProfileProperty.CREDENTIAL_SOURCE);
+            boolean hasWebIdentityTokenFile = properties.containsKey(ProfileProperty.WEB_IDENTITY_TOKEN_FILE);
+            boolean hasRoleArn = properties.containsKey(ProfileProperty.ROLE_ARN);
             Validate.validState(!(hasSourceProfile && hasCredentialSource),
                                 "Invalid profile file: profile has both %s and %s.",
                                 ProfileProperty.SOURCE_PROFILE, ProfileProperty.CREDENTIAL_SOURCE);
+
+            if (hasWebIdentityTokenFile && hasRoleArn) {
+                return Optional.ofNullable(roleAndWebIdentityTokenProfileCredentialsProvider());
+            }
 
             if (hasSourceProfile) {
                 return Optional.ofNullable(roleAndSourceProfileBasedProfileCredentialsProvider(children));
@@ -153,6 +160,17 @@ public final class ProfileCredentialsUtils {
         return ProcessCredentialsProvider.builder()
                                          .command(properties.get(ProfileProperty.CREDENTIAL_PROCESS))
                                          .build();
+    }
+
+    private AwsCredentialsProvider roleAndWebIdentityTokenProfileCredentialsProvider() {
+        requireProperties(ProfileProperty.ROLE_ARN, ProfileProperty.WEB_IDENTITY_TOKEN_FILE);
+
+        String roleArn = properties.get(ProfileProperty.ROLE_ARN);
+        String roleSessionName = properties.get(ProfileProperty.ROLE_SESSION_NAME);
+        String webIdentityTokenPath = properties.get(ProfileProperty.WEB_IDENTITY_TOKEN_FILE);
+
+        return WebIdentityCredentialsUtil.factory()
+                                         .create(roleArn, roleSessionName, webIdentityTokenPath);
     }
 
     /**
