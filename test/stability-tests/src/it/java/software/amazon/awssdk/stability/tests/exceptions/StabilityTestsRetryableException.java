@@ -18,9 +18,9 @@ package software.amazon.awssdk.stability.tests.exceptions;
 /**
  * Indicating the tests failure can be retried
  */
-public class StabilityTestsRetriableException extends RuntimeException {
+public class StabilityTestsRetryableException extends RuntimeException {
 
-    public StabilityTestsRetriableException(String message) {
+    public StabilityTestsRetryableException(String message) {
         super(message);
     }
 }

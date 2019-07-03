@@ -24,20 +24,20 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Denotes that a method is a test template for a retriable test.
+ * Denotes that a method is a test template for a retryable test.
  */
 @Target( {ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @TestTemplate
-@ExtendWith(RetriableTestExtension.class)
-public @interface RetriableTest {
+@ExtendWith(RetryableTestExtension.class)
+public @interface RetryableTest {
 
     /**
      * Exception to retry
      *
      * @return Exception that handled
      */
-    Class<? extends Throwable> exception() default Throwable.class;
+    Class<? extends Throwable> retryableException() default Throwable.class;
 
     /**
      * The maximum number of retries.

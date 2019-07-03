@@ -35,14 +35,14 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.opentest4j.TestAbortedException;
 
 
-public class RetriableTestExtension implements TestTemplateInvocationContextProvider, TestExecutionExceptionHandler {
+public class RetryableTestExtension implements TestTemplateInvocationContextProvider, TestExecutionExceptionHandler {
 
-    private static final Namespace NAMESPACE = Namespace.create(RetriableTestExtension.class);
+    private static final Namespace NAMESPACE = Namespace.create(RetryableTestExtension.class);
 
     @Override
     public boolean supportsTestTemplate(ExtensionContext extensionContext) {
         Method testMethod = extensionContext.getRequiredTestMethod();
-        return isAnnotated(testMethod, RetriableTest.class);
+        return isAnnotated(testMethod, RetryableTest.class);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class RetriableTestExtension implements TestTemplateInvocationContextProv
 
     @Override
     public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
-        if (!isRetriableException(context, throwable)) {
+        if (!isRetryableException(context, throwable)) {
             throw throwable;
         }
 
@@ -74,34 +74,34 @@ public class RetriableTestExtension implements TestTemplateInvocationContextProv
 
     }
 
-    private boolean isRetriableException(ExtensionContext context, Throwable throwable) {
-        return retriableException(context).isAssignableFrom(throwable.getClass()) || throwable instanceof TestAbortedException;
+    private boolean isRetryableException(ExtensionContext context, Throwable throwable) {
+        return retryableException(context).isAssignableFrom(throwable.getClass()) || throwable instanceof TestAbortedException;
     }
 
     private int maxRetries(ExtensionContext context) {
         return retrieveAnnotation(context).maxRetries();
     }
 
-    private Class<? extends Throwable> retriableException(ExtensionContext context) {
-        return retrieveAnnotation(context).exception();
+    private Class<? extends Throwable> retryableException(ExtensionContext context) {
+        return retrieveAnnotation(context).retryableException();
     }
 
-    private RetriableTest retrieveAnnotation(ExtensionContext context) {
-        return findAnnotation(context.getRequiredTestMethod(), RetriableTest.class)
-            .orElseThrow(() -> new ExtensionContextException("@RetriableTest Annotation not found on method"));
+    private RetryableTest retrieveAnnotation(ExtensionContext context) {
+        return findAnnotation(context.getRequiredTestMethod(), RetryableTest.class)
+            .orElseThrow(() -> new ExtensionContextException("@RetryableTest Annotation not found on method"));
     }
 
-    private static final class RetriableTestsTemplateInvocationContext implements TestTemplateInvocationContext {
+    private static final class RetryableTestsTemplateInvocationContext implements TestTemplateInvocationContext {
         private int maxRetries;
         private int numAttempt;
 
-        RetriableTestsTemplateInvocationContext(int numAttempt, int maxRetries) {
+        RetryableTestsTemplateInvocationContext(int numAttempt, int maxRetries) {
             this.numAttempt = numAttempt;
             this.maxRetries = maxRetries;
         }
     }
 
-    private static final class RetryExecutor implements Iterator<RetriableTestsTemplateInvocationContext> {
+    private static final class RetryExecutor implements Iterator<RetryableTestsTemplateInvocationContext> {
         private final int maxRetries;
         private int totalAttempts;
         private static final List<Throwable> throwables = new ArrayList<>();
@@ -115,7 +115,7 @@ public class RetriableTestExtension implements TestTemplateInvocationContextProv
             if (throwables.size() == maxRetries) {
                 throw new AssertionError("All attempts failed. Last exception: ", throwable);
             } else {
-                throw new TestAbortedException(String.format("Attempt %s failed of the retriable exeception, going to retry the test", totalAttempts), throwable);
+                throw new TestAbortedException(String.format("Attempt %s failed of the retryable exception, going to retry the test", totalAttempts), throwable);
             }
         }
 
@@ -135,9 +135,9 @@ public class RetriableTestExtension implements TestTemplateInvocationContextProv
         }
 
         @Override
-        public RetriableTestsTemplateInvocationContext next() {
+        public RetryableTestsTemplateInvocationContext next() {
             totalAttempts++;
-            return new RetriableTestsTemplateInvocationContext(totalAttempts, maxRetries);
+            return new RetryableTestsTemplateInvocationContext(totalAttempts, maxRetries);
         }
     }
 }

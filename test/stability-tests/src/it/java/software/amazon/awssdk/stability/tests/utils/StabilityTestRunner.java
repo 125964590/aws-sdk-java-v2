@@ -28,8 +28,7 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkServiceException;
 import software.amazon.awssdk.stability.tests.ExceptionCounter;
 import software.amazon.awssdk.stability.tests.TestResult;
-import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsFailedException;
-import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsRetriableException;
+import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsRetryableException;
 import software.amazon.awssdk.utils.Logger;
 import software.amazon.awssdk.utils.Validate;
 
@@ -265,21 +264,21 @@ public class StabilityTestRunner {
             String errorMessage = String.format("%s SdkClientExceptions were thrown, failing the tests",
                                           clientExceptionCount);
             log.error(() -> errorMessage);
-            throw new StabilityTestsFailedException(errorMessage);
+            throw new AssertionError(errorMessage);
         }
 
         if (testResult.unknownExceptionCount() > 0) {
             String errorMessage = String.format("%s unknown exceptions were thrown, failing the tests",
                                           unknownExceptionCount);
             log.error(() -> errorMessage);
-            throw new StabilityTestsFailedException(errorMessage);
+            throw new AssertionError(errorMessage);
         }
 
         if (ratio > ALLOWED_FAILURE_RATIO) {
             String errorMessage = String.format("More than %s percent requests (%s percent) failed of SdkServiceException "
                                           + "or IOException, failing the tests",
                                           ALLOWED_FAILURE_RATIO * 100, ratio * 100);
-            throw new StabilityTestsRetriableException(errorMessage);
+            throw new StabilityTestsRetryableException(errorMessage);
         }
     }
 

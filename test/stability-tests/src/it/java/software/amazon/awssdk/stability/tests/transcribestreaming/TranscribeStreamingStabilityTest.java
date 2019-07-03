@@ -32,8 +32,8 @@ import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTran
 import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponseHandler;
 import software.amazon.awssdk.services.transcribestreaming.model.TranscriptEvent;
 import software.amazon.awssdk.services.transcribestreaming.model.TranscriptResultStream;
-import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsRetriableException;
-import software.amazon.awssdk.stability.tests.utils.RetriableTest;
+import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsRetryableException;
+import software.amazon.awssdk.stability.tests.utils.RetryableTest;
 import software.amazon.awssdk.stability.tests.utils.StabilityTestRunner;
 import software.amazon.awssdk.stability.tests.utils.TestEventStreamingResponseHandler;
 import software.amazon.awssdk.stability.tests.utils.TestTranscribeStreamingSubscription;
@@ -63,7 +63,7 @@ public class TranscribeStreamingStabilityTest extends AwsTestBase {
         }
     }
 
-    @RetriableTest(maxRetries = 3, exception = StabilityTestsRetriableException.class)
+    @RetryableTest(maxRetries = 3, retryableException = StabilityTestsRetryableException.class)
     public void startTranscription() {
         IntFunction<CompletableFuture<?>> futureIntFunction = i ->
             transcribeStreamingClient.startStreamTranscription(b -> b.mediaSampleRateHertz(8_000)

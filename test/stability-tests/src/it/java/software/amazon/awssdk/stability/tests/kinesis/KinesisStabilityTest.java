@@ -45,8 +45,8 @@ import software.amazon.awssdk.services.kinesis.model.SubscribeToShardEvent;
 import software.amazon.awssdk.services.kinesis.model.SubscribeToShardEventStream;
 import software.amazon.awssdk.services.kinesis.model.SubscribeToShardResponse;
 import software.amazon.awssdk.services.kinesis.model.SubscribeToShardResponseHandler;
-import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsRetriableException;
-import software.amazon.awssdk.stability.tests.utils.RetriableTest;
+import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsRetryableException;
+import software.amazon.awssdk.stability.tests.utils.RetryableTest;
 import software.amazon.awssdk.stability.tests.utils.StabilityTestRunner;
 import software.amazon.awssdk.stability.tests.utils.TestEventStreamingResponseHandler;
 import software.amazon.awssdk.testutils.Waiter;
@@ -113,7 +113,7 @@ public class KinesisStabilityTest extends AwsTestBase {
         producer.shutdown();
     }
 
-    @RetriableTest(maxRetries = 3, exception = StabilityTestsRetriableException.class)
+    @RetryableTest(maxRetries = 3, retryableException = StabilityTestsRetryableException.class)
     public void putRecords_subscribeToShard() {
         putRecords();
         subscribeToShard();

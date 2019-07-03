@@ -25,8 +25,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry;
-import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsRetriableException;
-import software.amazon.awssdk.stability.tests.utils.RetriableTest;
+import software.amazon.awssdk.stability.tests.exceptions.StabilityTestsRetryableException;
+import software.amazon.awssdk.stability.tests.utils.RetryableTest;
 import software.amazon.awssdk.stability.tests.utils.StabilityTestRunner;
 import software.amazon.awssdk.utils.Logger;
 
@@ -49,7 +49,7 @@ public class SqsAsyncStabilityTest extends SqsBaseStabilityTest {
         }
     }
 
-    @RetriableTest(maxRetries = 3, exception = StabilityTestsRetriableException.class)
+    @RetryableTest(maxRetries = 3, retryableException = StabilityTestsRetryableException.class)
     public void sendMessage_receiveMessage() {
         sendMessage();
         receiveMessage();
